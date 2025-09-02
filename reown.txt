@@ -1,0 +1,86 @@
+Reown Wallet integration 
+
+->>> /config/index.tsx: //create file if not present
+
+import { cookieStorage, createStorage } from "wagmi";
+import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { monadTestnet, mainnet, arbitrum } from "@reown/appkit/networks";
+
+export const projectId = process.env.NEXT_PUBLIC_PROJECT_ID
+
+if (!projectId) {
+    throw new Error('No Project ID defined.')
+}
+
+export const networks = [monadTestnet, mainnet, arbitrum
+]
+
+export const wagmiAdapter = new WagmiAdapter({
+    storage: createStorage({
+        storage: cookieStorage
+    }),
+    ssr: true,
+    networks,
+    projectId
+})
+
+export const config = wagmiAdapter.wagmiConfig
+
+
+->>> /context/index.tsx: //create file if not present
+
+'use client'
+
+import { projectId, wagmiAdapter } from "@/config"
+import { createAppKit } from "@reown/appkit"
+import { monadTestnet, mainnet, arbitrum } from "@reown/appkit/networks"
+
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { url } from "inspector"
+import { projectNew } from "next/dist/build/swc/generated-native"
+import { describe } from "node:test"
+import React, {type ReactNode} from "react"
+import { cookieToInitialState, WagmiProvider, type Config } from "wagmi"
+
+const queryClient = new QueryClient()
+
+if (!projectId) {
+    throw new Error('No ProjectID Defined')
+}
+
+const metadata = {
+    name: 'reownWallet',
+    description: 'Testing the Reown Wallet Functionality',
+    url: 'examplereown.com'
+}
+
+const modal = createAppKit({
+    adapters: [wagmiAdapter],
+    projectId,
+    networks: [monadTestnet, mainnet, arbitrum],
+    defaultNetwork: monadTestnet,
+    themeMode: 'dark'
+
+})
+
+function ContextProvider({ children, cookies}: { children: ReactNode; cookies: string | null }) {
+    const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig as Config, cookies)
+
+    return (
+        <WagmiProvider config={wagmiAdapter.wagmiConfig as Config} initialState={initialState}>
+            <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        </WagmiProvider>
+    )
+}
+
+export default ContextProvider
+
+->>> /app/layout.tsx: //ensure {children} is wrapped
+
+<ContextProvider cookies={cookies}>{children}</ContextProvider>
+
+
+->>> /app/page.tsx: //add button in place of existing buttons
+
+<w3m-button />
+
