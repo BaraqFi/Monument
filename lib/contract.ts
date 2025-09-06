@@ -42,7 +42,7 @@ export async function hasJoinedContract(walletAddress: `0x${string}`): Promise<b
   }
 }
 
-export async function joinMonumentContract(xHandle: string, walletAddress: `0x${string}`): Promise<string> {
+export async function joinMonumentContract(xHandle: string, walletAddress: `0x${string}`): Promise<`0x${string}`> {
   const walletClient = getWalletClient()
 
   try {

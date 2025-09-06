@@ -4,8 +4,8 @@ import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
 import ContextProvider from "@/context"
-import { headers } from "next/headers"
 import { cookies } from "next/headers"
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
   title: "Monument - For Monad, With Love",
@@ -69,9 +69,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const cookieHeaders = await headers()
-  const cookies = cookieHeaders.get("cookie")
-
+  const cookieStore = await cookies()
+  const cookieString = cookieStore.get("wagmi.store")?.value ?? null
 
   return (
     <html lang="en">
@@ -85,7 +84,10 @@ html {
         `}</style>
       </head>
       <body>
-        <ContextProvider cookies={cookies}>{children}</ContextProvider>
+        <ContextProvider cookies={cookieString}>
+          {children}
+          <Analytics />
+        </ContextProvider>
       </body>
     </html>
   )

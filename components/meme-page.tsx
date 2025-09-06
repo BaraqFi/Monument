@@ -4,7 +4,11 @@ import { Button } from "@/components/ui/button"
 import { useState } from "react"
 import Image from "next/image"
 
-export function MemePage() {
+interface MemePageProps {
+  onBack?: () => void
+}
+
+export function MemePage({ onBack }: MemePageProps) {
   const [copied, setCopied] = useState(false)
   const discordHandle = "baraqfi"
 
@@ -19,7 +23,20 @@ export function MemePage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#200152" }}>
+    <div className="min-h-screen flex flex-col relative" style={{ backgroundColor: "#200152" }}>
+      {/* Back Arrow */}
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="fixed top-4 left-4 z-20 p-3 bg-purple-600/80 hover:bg-purple-600 text-white rounded-full transition-colors backdrop-blur-sm"
+          title="Back to Monument"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+
       <div className="w-full">
         <Image
           src="/doodle-strip.jpeg"

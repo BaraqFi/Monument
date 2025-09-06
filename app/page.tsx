@@ -58,6 +58,10 @@ export default function Home() {
     setCurrentStep("meme")
   }
 
+  const handleBackFromSecret = () => {
+    setCurrentStep("celebration")
+  }
+
   switch (currentStep) {
     case "landing":
       return <LandingPage onWalletConnected={handleWalletConnected} />
@@ -66,10 +70,10 @@ export default function Home() {
       return <HandleAvatarPage onComplete={handleParticipationComplete} />
 
     case "celebration":
-      return <CelebrationWall onSecretDoor={handleSecretDoor} />
+      return <CelebrationWall onSecretDoor={handleSecretDoor} onBackFromSecret={handleBackFromSecret} />
 
     case "meme":
-      return <MemePage />
+      return <MemePage onBack={handleBackFromSecret} />
 
     default:
       return <LandingPage onWalletConnected={handleWalletConnected} />

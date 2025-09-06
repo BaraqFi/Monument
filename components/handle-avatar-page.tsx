@@ -71,8 +71,21 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
         description: "Waiting for confirmation...",
       })
 
-      // Wait for transaction confirmation (simplified - in production you'd want to poll for receipt)
-      await new Promise((resolve) => setTimeout(resolve, 3000))
+      // Wait for actual blockchain confirmation
+      const { publicClient } = await import("@/lib/contract")
+      const receipt = await publicClient.waitForTransactionReceipt({ 
+        hash: txHash,
+        timeout: 60000 // 60 second timeout
+      })
+
+      if (receipt.status !== 'success') {
+        throw new Error('Transaction failed')
+      }
+
+      toast({
+        title: "Transaction confirmed!",
+        description: "Your join is now on-chain",
+      })
 
       setShowUpload(true)
     } catch (error: any) {
@@ -88,6 +101,28 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
   const handleFileUpload = useCallback(
     async (file: File) => {
       if (!address || !handle.trim() || usernameAvailable === false) return
+
+      // Upload validation
+      const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+      const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+      
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: "Please choose an image smaller than 10MB",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!ALLOWED_TYPES.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please choose a JPEG, PNG, WebP, or GIF image",
+          variant: "destructive",
+        })
+        return
+      }
 
       setIsUploading(true)
 
@@ -187,7 +222,7 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file && file.type.startsWith("image/")) {
+    if (file) {
       handleFileUpload(file)
     }
   }
