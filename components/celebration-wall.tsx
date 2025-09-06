@@ -27,10 +27,26 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   const [selectedImage, setSelectedImage] = useState<Participant | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   
-  const TILES_PER_PAGE = 2000 // 2000 images per page
-  const TOTAL_PAGES = 5 // 10,000 / 2000 = 5 pages
-  const GRID_COLUMNS = 80 // 80 columns
-  const GRID_ROWS = 25 // 80x25 = 2000 tiles
+  // Responsive grid configuration
+  const MOBILE_TILES_PER_PAGE = 225 // 15x15 grid for mobile
+  const DESKTOP_TILES_PER_PAGE = 1000 // 40x25 grid for desktop (10 pages max)
+  const TILES_PER_PAGE = isMobile ? MOBILE_TILES_PER_PAGE : DESKTOP_TILES_PER_PAGE
+  
+  const MOBILE_GRID_COLUMNS = 15
+  const MOBILE_GRID_ROWS = 15
+  const DESKTOP_GRID_COLUMNS = 40
+  const DESKTOP_GRID_ROWS = 25
+  
+  const GRID_COLUMNS = isMobile ? MOBILE_GRID_COLUMNS : DESKTOP_GRID_COLUMNS
+  const GRID_ROWS = isMobile ? MOBILE_GRID_ROWS : DESKTOP_GRID_ROWS
+  
+  const TOTAL_PAGES = Math.ceil(10000 / TILES_PER_PAGE) // Dynamic based on tiles per page
+
+  // Reset to first page when switching between mobile/desktop
+  useEffect(() => {
+    setCurrentPage(0)
+    setLoadedImages(new Set())
+  }, [isMobile])
 
   useEffect(() => {
     const supabase = createClient()
@@ -162,8 +178,8 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
             <Image
               src={getAvatarUrl(participant.avatar_filename) || "/placeholder.svg"}
               alt={`${participant.x_handle}'s avatar`}
-              width={120} // Scaled up for larger container
-              height={120} // Scaled up for larger container
+              width={isMobile ? 60 : 80} // Responsive tile sizes
+              height={isMobile ? 60 : 80} // Mobile: 60px, Desktop: 80px
               className="w-full h-full object-cover"
             />
           ) : (
@@ -182,10 +198,10 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
           gridTemplateColumns: `repeat(${GRID_COLUMNS}, 1fr)`,
           gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
           gap: "0px",
-          width: "90vw", // Much larger container - 90% of viewport width
-          height: "auto", // Height determined by content
-          maxWidth: "90vw",
-          aspectRatio: "16/5", // 80:25 ratio for clean proportions
+          width: isMobile ? "95vw" : "85vw", // More space on mobile
+          height: "auto",
+          maxWidth: isMobile ? "95vw" : "85vw",
+          aspectRatio: isMobile ? "1/1" : "3/2", // Square on mobile, wider on desktop
         }}
       >
         {tiles}
@@ -253,6 +269,9 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
             </button>
             <span className="text-white text-lg">
               Page {currentPage + 1} of {TOTAL_PAGES}
+              <span className="text-white/70 text-sm block">
+                {isMobile ? "15×15 grid" : "40×25 grid"} • {TILES_PER_PAGE} tiles per page
+              </span>
             </span>
             <button
               onClick={() => handlePageChange('next')}
