@@ -28,11 +28,11 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   const observerRef = useRef<IntersectionObserver | null>(null)
   
   // Responsive grid configuration
-  const MOBILE_TILES_PER_PAGE = 225 // 15x15 grid for mobile
+  const MOBILE_TILES_PER_PAGE = 450 // 30x15 grid for mobile (doubled tiles)
   const DESKTOP_TILES_PER_PAGE = 1000 // 40x25 grid for desktop (10 pages max)
   const TILES_PER_PAGE = isMobile ? MOBILE_TILES_PER_PAGE : DESKTOP_TILES_PER_PAGE
   
-  const MOBILE_GRID_COLUMNS = 15
+  const MOBILE_GRID_COLUMNS = 30
   const MOBILE_GRID_ROWS = 15
   const DESKTOP_GRID_COLUMNS = 40
   const DESKTOP_GRID_ROWS = 25
@@ -270,7 +270,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
             <span className="text-white text-lg">
               Page {currentPage + 1} of {TOTAL_PAGES}
               <span className="text-white/70 text-sm block">
-                {isMobile ? "15×15 grid" : "40×25 grid"} • {TILES_PER_PAGE} tiles per page
+                {isMobile ? "30×15 grid" : "40×25 grid"} • {TILES_PER_PAGE} tiles per page
               </span>
             </span>
             <button
