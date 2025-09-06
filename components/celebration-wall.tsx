@@ -28,12 +28,12 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   const observerRef = useRef<IntersectionObserver | null>(null)
   
   // Responsive grid configuration
-  const MOBILE_TILES_PER_PAGE = 450 // 30x15 grid for mobile (doubled tiles)
+  const MOBILE_TILES_PER_PAGE = 500 // 500 tiles per page for mobile (20 pages total)
   const DESKTOP_TILES_PER_PAGE = 1000 // 40x25 grid for desktop (10 pages max)
   const TILES_PER_PAGE = isMobile ? MOBILE_TILES_PER_PAGE : DESKTOP_TILES_PER_PAGE
   
-  const MOBILE_GRID_COLUMNS = 30
-  const MOBILE_GRID_ROWS = 15
+  const MOBILE_GRID_COLUMNS = 10 // 10 columns for mobile
+  const MOBILE_GRID_ROWS = 50 // 50 rows for mobile (10x50 = 500 tiles, scrollable)
   const DESKTOP_GRID_COLUMNS = 40
   const DESKTOP_GRID_ROWS = 25
   
@@ -178,8 +178,8 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
             <Image
               src={getAvatarUrl(participant.avatar_filename) || "/placeholder.svg"}
               alt={`${participant.x_handle}'s avatar`}
-              width={isMobile ? 60 : 80} // Responsive tile sizes
-              height={isMobile ? 60 : 80} // Mobile: 60px, Desktop: 80px
+              width={80} // Same 80px tiles for both mobile and desktop
+              height={80} // Proper image display on all devices
               className="w-full h-full object-cover"
             />
           ) : (
@@ -199,9 +199,11 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
           gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
           gap: "0px",
           width: isMobile ? "95vw" : "85vw", // More space on mobile
-          height: "auto",
+          height: isMobile ? "auto" : "auto", // Allow vertical scrolling on mobile
           maxWidth: isMobile ? "95vw" : "85vw",
-          aspectRatio: isMobile ? "1/1" : "3/2", // Square on mobile, wider on desktop
+          aspectRatio: isMobile ? "1/5" : "3/2", // Tall aspect ratio for mobile scrolling
+          maxHeight: isMobile ? "80vh" : "none", // Limit height on mobile for scrolling
+          overflowY: isMobile ? "auto" : "visible", // Enable vertical scrolling on mobile
         }}
       >
         {tiles}
@@ -269,9 +271,6 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
             </button>
             <span className="text-white text-lg">
               Page {currentPage + 1} of {TOTAL_PAGES}
-              <span className="text-white/70 text-sm block">
-                {isMobile ? "30×15 grid" : "40×25 grid"} • {TILES_PER_PAGE} tiles per page
-              </span>
             </span>
             <button
               onClick={() => handlePageChange('next')}
