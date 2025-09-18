@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useAccount } from "wagmi"
 import { createClient } from "@/lib/supabase/client"
 import { getAvatarUrl } from "@/lib/supabase-utils"
+import { getAvatarUrlWithFallback } from "@/lib/avatar-utils"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import type { Participant } from "@/lib/types"
@@ -329,6 +330,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
               <div>
                 <h1 className="text-2xl font-bold text-white">@{selectedImage.x_handle}</h1>
                 <p className="text-white/70">Monument Participant</p>
+                <p className="text-xs text-green-400/80 mt-1">🔄 Live X avatar</p>
               </div>
               <button
                 onClick={() => setSelectedImage(null)}
@@ -346,14 +348,19 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
               <div className="flex-1 p-6 flex items-center justify-center" style={{ backgroundColor: "#937cdf20" }}>
                 <div className="relative w-full h-full flex items-center justify-center">
                   <Image
-                    src={getAvatarUrl(selectedImage.avatar_filename)}
+                    src={getAvatarUrlWithFallback(selectedImage, true, 450)}
                     alt={`${selectedImage.x_handle}'s avatar`}
-                    width={800}
-                    height={800}
+                    width={450}
+                    height={450}
                     className="w-full h-full object-contain rounded-lg"
                     style={{ maxWidth: "100%", maxHeight: "100%" }}
                     unoptimized={true}
                     priority={true}
+                    onError={(e) => {
+                      // Fallback to Supabase storage if unavatar fails
+                      const target = e.target as HTMLImageElement
+                      target.src = getAvatarUrl(selectedImage.avatar_filename)
+                    }}
                   />
                 </div>
               </div>
