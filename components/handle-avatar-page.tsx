@@ -256,7 +256,7 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
             <div className="space-y-2">
               <Input
                 type="text"
-                placeholder="ENTER USERNAME"
+                placeholder="ENTER X HANDLE"
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
                 maxLength={20}
