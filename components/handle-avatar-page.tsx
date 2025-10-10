@@ -39,9 +39,44 @@ export function HandleAvatarPage({ onComplete, onViewWall }: HandleAvatarPagePro
 
   const debouncedHandle = useDebounce(handle.trim(), 500)
 
+  // Validate username format
+  const validateUsername = (username: string): { valid: boolean; error?: string } => {
+    // Length check (4-15 characters)
+    if (username.length < 4) {
+      return { valid: false, error: "Username must be at least 4 characters" }
+    }
+    if (username.length > 15) {
+      return { valid: false, error: "Username must be 15 characters or less" }
+    }
+
+    // Characters check (only letters, numbers, underscores)
+    const validCharsRegex = /^[a-zA-Z0-9_]+$/
+    if (!validCharsRegex.test(username)) {
+      return { valid: false, error: "Only letters, numbers, and underscores allowed" }
+    }
+
+    // Forbidden words check
+    const lowerUsername = username.toLowerCase()
+    if (lowerUsername.includes("twitter") || lowerUsername.includes("admin")) {
+      return { valid: false, error: "Cannot contain 'Twitter' or 'Admin'" }
+    }
+
+    return { valid: true }
+  }
+
   // Check username availability
   React.useEffect(() => {
     if (debouncedHandle && debouncedHandle.length > 0) {
+      // First validate format
+      const validation = validateUsername(debouncedHandle)
+      
+      if (!validation.valid) {
+        setUsernameAvailable(false)
+        setIsCheckingUsername(false)
+        return
+      }
+
+      // Then check availability in database
       setIsCheckingUsername(true)
       checkUsernameAvailable(debouncedHandle)
         .then(setUsernameAvailable)
@@ -229,6 +264,13 @@ export function HandleAvatarPage({ onComplete, onViewWall }: HandleAvatarPagePro
   const getUsernameStatus = () => {
     if (!handle.trim()) return null
     if (isCheckingUsername) return { color: "text-yellow-400", text: "Checking..." }
+    
+    // Check validation first
+    const validation = validateUsername(handle.trim())
+    if (!validation.valid) {
+      return { color: "text-red-400", text: validation.error || "Invalid username ✗" }
+    }
+    
     if (usernameAvailable === true) return { color: "text-green-400", text: "Available ✓" }
     if (usernameAvailable === false) return { color: "text-red-400", text: "User already exists ✗" }
     return null
@@ -258,7 +300,7 @@ export function HandleAvatarPage({ onComplete, onViewWall }: HandleAvatarPagePro
                 placeholder="ENTER X HANDLE"
                 value={handle}
                 onChange={(e) => setHandle(e.target.value)}
-                maxLength={20}
+                maxLength={15}
                 className="w-full px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-white/90 border-2 rounded-lg text-center text-base sm:text-lg font-semibold tracking-wider"
                 style={{
                   backgroundColor: "#937cdf",
