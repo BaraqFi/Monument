@@ -3,14 +3,13 @@ import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import "./globals.css"
-import ContextProvider from "@/context"
-import { cookies } from "next/headers"
 import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
   title: "Monument - For Monad, With Love",
-  description: "A Monument dApp for the Monad community - Join the celebration and leave your mark on the blockchain",
-  keywords: "Monad, Monument, dApp, blockchain, crypto, community",
+  description: "A Monument for the Monad community - Join the celebration and leave your mark",
+  keywords: "Monad, Monument, community, celebration",
   authors: [{ name: "Monad Community" }],
   creator: "Monad Community",
   publisher: "Monad Community",
@@ -18,7 +17,7 @@ export const metadata: Metadata = {
   // Open Graph metadata for social sharing
   openGraph: {
     title: "Monument - For Monad, With Love",
-    description: "A Monument dApp for the Monad community - Join the celebration and leave your mark on the blockchain",
+    description: "A Monument for the Monad community - Join the celebration and leave your mark",
     url: "https://monument.monad.xyz",
     siteName: "Monument",
     images: [
@@ -37,7 +36,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Monument - For Monad, With Love",
-    description: "A Monument dApp for the Monad community - Join the celebration and leave your mark on the blockchain",
+    description: "A Monument for the Monad community - Join the celebration and leave your mark",
     images: ["/og-image.jpeg"],
     creator: "@MonadXYZ",
   },
@@ -64,14 +63,11 @@ export const metadata: Metadata = {
     generator: 'v0.app'
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const cookieStore = await cookies()
-  const cookieString = cookieStore.get("wagmi.store")?.value ?? null
-
   return (
     <html lang="en">
       <head>
@@ -84,10 +80,9 @@ html {
         `}</style>
       </head>
       <body>
-        <ContextProvider cookies={cookieString}>
-          {children}
-          <Analytics />
-        </ContextProvider>
+        {children}
+        <Toaster />
+        <Analytics />
       </body>
     </html>
   )

@@ -1,37 +1,5 @@
 import { createClient } from "./supabase/client"
 import type { Participant } from "./types"
-import { hasJoinedContract } from "./contract"
-
-// Cache for recent participant checks to reduce database calls
-const participantCache = new Map<string, { data: Participant | null; timestamp: number }>()
-const CACHE_DURATION = 30000 // 30 seconds
-
-export async function checkExistingParticipant(walletAddress: string): Promise<Participant | null> {
-  // Check cache first
-  const cached = participantCache.get(walletAddress)
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data
-  }
-
-  // Check contract participation first
-  const hasJoined = await hasJoinedContract(walletAddress)
-  if (!hasJoined) {
-    // Cache negative result
-    participantCache.set(walletAddress, { data: null, timestamp: Date.now() })
-    return null
-  }
-
-  // If joined on contract, get additional data from Supabase
-  const supabase = createClient()
-  const { data, error } = await supabase.from("participants").select("*").eq("wallet_address", walletAddress).single()
-
-  const result = error ? null : data
-
-  // Cache the result
-  participantCache.set(walletAddress, { data: result, timestamp: Date.now() })
-
-  return result
-}
 
 export async function checkUsernameAvailable(xHandle: string): Promise<boolean> {
   const supabase = createClient()
@@ -43,12 +11,9 @@ export async function checkUsernameAvailable(xHandle: string): Promise<boolean> 
 }
 
 export async function createParticipant(
-  walletAddress: string,
   xHandle: string,
   avatarFilename: string,
 ): Promise<Participant | null> {
-  // Contract call is handled separately in the component
-  // This function now only stores additional data in Supabase
   const supabase = createClient()
 
   // Double-check username availability before insert
@@ -60,7 +25,6 @@ export async function createParticipant(
   const { data, error } = await supabase
     .from("participants")
     .insert({
-      wallet_address: walletAddress,
       x_handle: xHandle,
       avatar_filename: avatarFilename,
     })
@@ -75,9 +39,6 @@ export async function createParticipant(
     }
     return null
   }
-
-  // Clear cache for this wallet
-  participantCache.delete(walletAddress)
 
   return data
 }

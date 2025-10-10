@@ -1,32 +1,16 @@
 "use client"
 
-import { useAccount } from "wagmi"
 import Image from "next/image"
-import { useEffect, useState } from "react"
+import { Button } from "@/components/ui/button"
 
 interface LandingPageProps {
-  onWalletConnected: () => void
+  onJoinClick: () => void
 }
 
-export function LandingPage({ onWalletConnected }: LandingPageProps) {
-  const { isConnected } = useAccount()
-  const [isVisible, setIsVisible] = useState(true)
-
-  useEffect(() => {
-    if (isConnected) {
-      // Fade out and move to next step
-      setIsVisible(false)
-      setTimeout(() => {
-        onWalletConnected()
-      }, 500)
-    }
-  }, [isConnected, onWalletConnected])
-
+export function LandingPage({ onJoinClick }: LandingPageProps) {
   return (
     <div
-      className={`min-h-screen flex flex-col items-center justify-center transition-opacity duration-500 ${
-        isVisible ? "opacity-100" : "opacity-0"
-      }`}
+      className="min-h-screen flex flex-col items-center justify-center"
       style={{ backgroundColor: "#200152" }}
     >
       {/* Monad Logo */}
@@ -40,8 +24,13 @@ export function LandingPage({ onWalletConnected }: LandingPageProps) {
       </h1>
 
       <div className="flex flex-col items-center gap-4">
-        <w3m-button />
-        {isConnected && <p className="text-white text-sm opacity-75">Wallet connected! Redirecting...</p>}
+        <Button
+          onClick={onJoinClick}
+          className="px-8 py-6 text-lg font-semibold text-white rounded-full hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: "#937cdf" }}
+        >
+          JOIN THE MONUMENT
+        </Button>
       </div>
     </div>
   )

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { useAccount } from "wagmi"
 import { createClient } from "@/lib/supabase/client"
 import { getAvatarUrl } from "@/lib/supabase-utils"
 import { getAvatarUrlWithFallback } from "@/lib/avatar-utils"
@@ -17,7 +16,6 @@ interface CelebrationWallProps {
 }
 
 export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationWallProps) {
-  const { address } = useAccount()
   const isMobile = useIsMobile()
   const [participants, setParticipants] = useState<Participant[]>([])
   const [userParticipant, setUserParticipant] = useState<Participant | null>(null)
@@ -27,6 +25,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set())
   const [selectedImage, setSelectedImage] = useState<Participant | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
+  const [userHandle, setUserHandle] = useState<string | null>(null)
   
   // Responsive grid configuration
   const MOBILE_TILES_PER_PAGE = 450 // 30x15 grid for mobile (doubled tiles)
@@ -50,20 +49,26 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   }, [isMobile])
 
   useEffect(() => {
+    // Get user handle from localStorage
+    const storedHandle = localStorage.getItem("monument_user_handle")
+    setUserHandle(storedHandle)
+  }, [])
+
+  useEffect(() => {
     const supabase = createClient()
 
     const loadParticipants = async () => {
       // Only select necessary fields for performance
       const { data, error } = await supabase
         .from("participants")
-        .select("id, wallet_address, x_handle, avatar_filename, created_at")
+        .select("id, x_handle, avatar_filename, created_at")
         .order("created_at", { ascending: true })
 
       if (data && !error) {
         setParticipants(data)
 
-        if (address) {
-          const userRecord = data.find((p) => p.wallet_address === address)
+        if (userHandle) {
+          const userRecord = data.find((p) => p.x_handle.toLowerCase() === userHandle.toLowerCase())
           setUserParticipant(userRecord || null)
         }
       }
@@ -71,7 +76,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
 
     loadParticipants()
 
-    // Set up real-time subscription with throttling
+    // Set up real-time subscription with throttling (optional - works without it)
     const channel = supabase
       .channel("participants_changes")
       .on(
@@ -86,7 +91,11 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
           setPendingUpdates((prev) => [...prev, newParticipant])
         },
       )
-      .subscribe()
+      .subscribe((status) => {
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.log('Realtime subscription failed - continuing without live updates')
+        }
+      })
 
     // Throttle realtime updates into batches
     const updateInterval = setInterval(() => {
@@ -95,7 +104,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
           setParticipants((prev) => [...prev, ...pending])
           
           // Check if any pending updates are for current user
-          const userUpdate = pending.find((p) => address && p.wallet_address === address)
+          const userUpdate = pending.find((p) => userHandle && p.x_handle.toLowerCase() === userHandle.toLowerCase())
           if (userUpdate) {
             setUserParticipant(userUpdate)
           }
@@ -106,16 +115,22 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
       })
     }, 500) // Batch updates every 500ms
 
+    // Fallback: poll for new participants every 10 seconds if realtime fails
+    const pollInterval = setInterval(() => {
+      loadParticipants()
+    }, 10000)
+
     return () => {
       supabase.removeChannel(channel)
       clearInterval(updateInterval)
+      clearInterval(pollInterval)
     }
-  }, [address])
+  }, [userHandle])
 
   // Handle first-time confetti and tweet button
   useEffect(() => {
-    if (userParticipant && address) {
-      const hasSeenConfetti = localStorage.getItem(`confetti_${address}`)
+    if (userParticipant && userHandle) {
+      const hasSeenConfetti = localStorage.getItem(`confetti_${userHandle}`)
 
       if (!hasSeenConfetti) {
         // Defer confetti until after first paint
@@ -133,10 +148,10 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
         setShowTweetButton(true)
 
         // Mark as seen
-        localStorage.setItem(`confetti_${address}`, "true")
+        localStorage.setItem(`confetti_${userHandle}`, "true")
       }
     }
-  }, [userParticipant, address])
+  }, [userParticipant, userHandle])
 
   const handleTweet = () => {
     const tweetText = `I just placed my tile in the Monument! 🎨 Join the celebration at ${window.location.origin}`

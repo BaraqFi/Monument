@@ -1,16 +1,15 @@
 "use client"
 
 import React, { useState, useCallback } from "react"
-import { useAccount } from "wagmi"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createParticipant, uploadAvatar, checkUsernameAvailable } from "@/lib/supabase-utils"
-import { joinMonumentContract } from "@/lib/contract"
 import { useToast } from "@/hooks/use-toast"
 import NextImage from "next/image"
 
 interface HandleAvatarPageProps {
   onComplete: () => void
+  onViewWall?: () => void
 }
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -29,8 +28,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue
 }
 
-export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
-  const { address } = useAccount()
+export function HandleAvatarPage({ onComplete, onViewWall }: HandleAvatarPageProps) {
   const { toast } = useToast()
   const [handle, setHandle] = useState("")
   const [showUpload, setShowUpload] = useState(false)
@@ -56,42 +54,19 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!handle.trim() || !address || usernameAvailable === false) return
+    if (!handle.trim() || usernameAvailable === false) return
 
     try {
       toast({
-        title: "Joining Monument...",
-        description: "Please confirm the transaction in your wallet",
-      })
-
-      const txHash = await joinMonumentContract(handle.trim(), address as `0x${string}`)
-
-      toast({
-        title: "Transaction submitted",
-        description: "Waiting for confirmation...",
-      })
-
-      // Wait for actual blockchain confirmation
-      const { publicClient } = await import("@/lib/contract")
-      const receipt = await publicClient.waitForTransactionReceipt({ 
-        hash: txHash,
-        timeout: 60000 // 60 second timeout
-      })
-
-      if (receipt.status !== 'success') {
-        throw new Error('Transaction failed')
-      }
-
-      toast({
-        title: "Transaction confirmed!",
-        description: "Your join is now on-chain",
+        title: "Getting ready...",
+        description: "Preparing your spot in the monument",
       })
 
       setShowUpload(true)
     } catch (error: any) {
-      console.error("Contract call failed:", error)
+      console.error("Submit failed:", error)
       toast({
-        title: "Transaction failed",
+        title: "Something went wrong",
         description: error.message || "Please try again",
         variant: "destructive",
       })
@@ -100,7 +75,7 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
 
   const handleFileUpload = useCallback(
     async (file: File) => {
-      if (!address || !handle.trim() || usernameAvailable === false) return
+      if (!handle.trim() || usernameAvailable === false) return
 
       // Upload validation
       const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -126,83 +101,107 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
 
       setIsUploading(true)
 
-      try {
-        const canvas = document.createElement("canvas")
-        const ctx = canvas.getContext("2d")
-        const img = new Image()
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      const img = new Image()
 
-        img.onload = async () => {
-          canvas.width = 64
-          canvas.height = 64
-
-          // Better image scaling
-          if (ctx) {
-            ctx.imageSmoothingEnabled = true
-            ctx.imageSmoothingQuality = "high"
-            ctx.drawImage(img, 0, 0, 64, 64)
-          }
-
-          canvas.toBlob(
-            async (blob) => {
-              if (!blob) return
-
-              const filename = `${address}-${Date.now()}.png`
-              const resizedFile = new File([blob], filename, { type: "image/png" })
-
-              toast({
-                title: "Stamping your tile...",
-                description: "Processing your avatar",
-              })
-
-              try {
-                // Upload to Supabase storage
-                const uploadPath = await uploadAvatar(resizedFile, filename)
-
-                if (uploadPath) {
-                  const participant = await createParticipant(address, handle.trim(), filename)
-
-                  if (participant) {
-                    toast({
-                      title: "Tile stamped!",
-                      description: "Welcome to the Monument",
-                    })
-
-                    setTimeout(() => {
-                      onComplete()
-                    }, 1000)
-                  }
-                }
-              } catch (error: any) {
-                if (error.message === "User already exists") {
-                  toast({
-                    title: "User already exists",
-                    description: "Please choose a different username",
-                    variant: "destructive",
-                  })
-                  setUsernameAvailable(false)
-                } else {
-                  throw error
-                }
-              }
-            },
-            "image/png",
-            0.9,
-          )
-        }
-
-        img.src = URL.createObjectURL(file)
-      } catch (error) {
-        console.error("Upload failed:", error)
+      img.onerror = () => {
+        console.error("Image load failed")
         toast({
           title: "Upload failed",
-          description: "Please try again",
+          description: "Could not load image",
           variant: "destructive",
         })
-      } finally {
         setIsUploading(false)
       }
+
+      img.onload = async () => {
+        canvas.width = 64
+        canvas.height = 64
+
+        // Better image scaling
+        if (ctx) {
+          ctx.imageSmoothingEnabled = true
+          ctx.imageSmoothingQuality = "high"
+          ctx.drawImage(img, 0, 0, 64, 64)
+        }
+
+        canvas.toBlob(
+          async (blob) => {
+            if (!blob) {
+              setIsUploading(false)
+              return
+            }
+
+            const filename = `${handle.trim()}-${Date.now()}.png`
+            const resizedFile = new File([blob], filename, { type: "image/png" })
+
+            toast({
+              title: "Stamping your tile...",
+              description: "Processing your avatar",
+            })
+
+            try {
+              // Upload to Supabase storage
+              const uploadPath = await uploadAvatar(resizedFile, filename)
+
+              if (uploadPath) {
+                const participant = await createParticipant(handle.trim(), filename)
+
+                if (participant) {
+                  // Store handle in localStorage
+                  localStorage.setItem("monument_user_handle", handle.trim())
+                  
+                  toast({
+                    title: "Tile stamped!",
+                    description: "Welcome to the Monument",
+                  })
+
+                  setTimeout(() => {
+                    onComplete()
+                  }, 1000)
+                } else {
+                  toast({
+                    title: "Upload failed",
+                    description: "Could not create participant",
+                    variant: "destructive",
+                  })
+                }
+              } else {
+                toast({
+                  title: "Upload failed",
+                  description: "Could not upload avatar",
+                  variant: "destructive",
+                })
+              }
+            } catch (error: any) {
+              console.error("Upload error:", error)
+              if (error.message === "User already exists") {
+                toast({
+                  title: "User already exists",
+                  description: "Please choose a different username",
+                  variant: "destructive",
+                })
+                setUsernameAvailable(false)
+              } else {
+                toast({
+                  title: "Upload failed",
+                  description: error.message || "Please try again",
+                  variant: "destructive",
+                })
+              }
+            } finally {
+              setIsUploading(false)
+            }
+          },
+          "image/png",
+          0.9,
+        )
+      }
+
+      img.src = URL.createObjectURL(file)
     },
-    [address, handle, usernameAvailable, onComplete, toast],
+    [handle, usernameAvailable, onComplete, toast],
   )
 
   const handleDrop = useCallback(
@@ -271,15 +270,30 @@ export function HandleAvatarPage({ onComplete }: HandleAvatarPageProps) {
             </div>
 
             {!showUpload && (
-              <div className="flex justify-center">
-                <Button
-                  type="submit"
-                  className="w-32 sm:w-40 text-white font-semibold py-2 sm:py-3 rounded-lg text-base sm:text-lg hover:opacity-90 transition-opacity tracking-wider"
-                  style={{ backgroundColor: "#937cdf" }}
-                  disabled={!handle.trim() || usernameAvailable === false || isCheckingUsername}
-                >
-                  SUBMIT →
-                </Button>
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <Button
+                    type="submit"
+                    className="w-32 sm:w-40 text-white font-semibold py-2 sm:py-3 rounded-lg text-base sm:text-lg hover:opacity-90 transition-opacity tracking-wider"
+                    style={{ backgroundColor: "#937cdf" }}
+                    disabled={!handle.trim() || usernameAvailable === false || isCheckingUsername}
+                  >
+                    SUBMIT →
+                  </Button>
+                </div>
+
+                {onViewWall && (
+                  <div className="text-center">
+                    <p className="text-white/60 text-sm mb-2">Already joined?</p>
+                    <button
+                      type="button"
+                      onClick={onViewWall}
+                      className="text-white/80 hover:text-white text-sm underline underline-offset-4 transition-colors"
+                    >
+                      View the wall
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </form>
