@@ -26,6 +26,8 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   const [selectedImage, setSelectedImage] = useState<Participant | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const [userHandle, setUserHandle] = useState<string | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const gridRef = useRef<HTMLDivElement>(null)
   
   // Responsive grid configuration
   const MOBILE_TILES_PER_PAGE = 450 // 30x15 grid for mobile (doubled tiles)
@@ -92,8 +94,8 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
         },
       )
       .subscribe((status) => {
-        if (status === 'SUBSCRIPTION_ERROR') {
-          console.log('Realtime subscription failed - continuing without live updates')
+        if (status !== 'SUBSCRIBED') {
+          console.log('Realtime subscription status:', status)
         }
       })
 
@@ -160,6 +162,98 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
     setShowTweetButton(false)
   }
 
+  const handleDownloadCollage = async () => {
+    if (isDownloading) return
+    
+    setIsDownloading(true)
+    
+    try {
+      const startIndex = currentPage * TILES_PER_PAGE
+      
+      // Tile size for high quality output
+      const TILE_SIZE = 120 // pixels per tile in output
+      const canvasWidth = GRID_COLUMNS * TILE_SIZE
+      const canvasHeight = GRID_ROWS * TILE_SIZE
+      
+      // Create canvas
+      const canvas = document.createElement('canvas')
+      canvas.width = canvasWidth
+      canvas.height = canvasHeight
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) {
+        throw new Error('Could not get canvas context')
+      }
+      
+      // Fill background
+      ctx.fillStyle = '#200152'
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+      
+      // Load and draw all images
+      const imagePromises: Promise<void>[] = []
+      
+      for (let i = 0; i < TILES_PER_PAGE; i++) {
+        const globalIndex = startIndex + i
+        const participant = participants[globalIndex]
+        
+        const row = Math.floor(i / GRID_COLUMNS)
+        const col = i % GRID_COLUMNS
+        const x = col * TILE_SIZE
+        const y = row * TILE_SIZE
+        
+        if (participant) {
+          // Create promise to load and draw participant avatar
+          const promise = new Promise<void>((resolve) => {
+            const img = new window.Image()
+            img.crossOrigin = 'anonymous'
+            
+            img.onload = () => {
+              ctx.drawImage(img, x, y, TILE_SIZE, TILE_SIZE)
+              resolve()
+            }
+            
+            img.onerror = () => {
+              // Draw placeholder on error
+              ctx.fillStyle = '#937cdf20'
+              ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE)
+              resolve()
+            }
+            
+            img.src = getAvatarUrl(participant.avatar_filename) || '/placeholder.svg'
+          })
+          
+          imagePromises.push(promise)
+        } else {
+          // Draw empty tile
+          ctx.fillStyle = '#937cdf20'
+          ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE)
+        }
+      }
+      
+      // Wait for all images to load
+      await Promise.all(imagePromises)
+      
+      // Convert canvas to blob and download
+      canvas.toBlob((blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `monument-page-${currentPage + 1}-${Date.now()}.png`
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(url)
+        }
+        setIsDownloading(false)
+      }, 'image/png', 1.0)
+      
+    } catch (error) {
+      console.error('Error downloading collage:', error)
+      setIsDownloading(false)
+    }
+  }
+
   const renderMuralGrid = () => {
     const startIndex = currentPage * TILES_PER_PAGE
     const endIndex = startIndex + TILES_PER_PAGE
@@ -186,7 +280,9 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
             margin: "0",
             padding: "0",
             border: "none",
-            outline: "none"
+            outline: "none",
+            lineHeight: "0",
+            fontSize: "0"
           }}
           onClick={() => !isMobile && participant && setSelectedImage(participant)}
         >
@@ -197,9 +293,10 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
               width={isMobile ? 60 : 80} // Responsive tile sizes
               height={isMobile ? 60 : 80} // Mobile: 60px, Desktop: 80px
               className="w-full h-full object-cover"
+              style={{ display: 'block', margin: 0, padding: 0 }}
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-purple-800/30" />
+            <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-purple-800/30" style={{ margin: 0, padding: 0, display: 'block' }} />
           )}
 
           {isUserTile && <div className="absolute inset-0 bg-yellow-400/20 animate-pulse" />}
@@ -209,15 +306,20 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
 
     return (
       <div
+        ref={gridRef}
         className="grid transition-transform duration-500 ease-in-out"
         style={{
           gridTemplateColumns: `repeat(${GRID_COLUMNS}, 1fr)`,
           gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-          gap: "0px",
+          gap: "0",
+          margin: "0",
+          padding: "0",
           width: isMobile ? "95vw" : "85vw", // More space on mobile
           height: "auto",
           maxWidth: isMobile ? "95vw" : "85vw",
           aspectRatio: isMobile ? "1/1" : "3/2", // Square on mobile, wider on desktop
+          lineHeight: "0",
+          fontSize: "0",
         }}
       >
         {tiles}
@@ -296,6 +398,36 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
               }`}
             >
               Next →
+            </button>
+          </div>
+          
+          {/* Download Button */}
+          <div className="flex justify-center">
+            <button
+              onClick={handleDownloadCollage}
+              disabled={isDownloading}
+              className={`px-6 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 ${
+                isDownloading 
+                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                  : 'bg-green-600 text-white hover:bg-green-700 hover:scale-105'
+              }`}
+            >
+              {isDownloading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Capturing...
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Download Page {currentPage + 1}
+                </>
+              )}
             </button>
           </div>
         </div>
