@@ -8,6 +8,12 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onJoinClick }: LandingPageProps) {
+  const handleJoinClick = () => {
+    // Store user interaction for audio playback on meme page
+    localStorage.setItem("monument_user_interacted", "true")
+    onJoinClick()
+  }
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center"
@@ -25,7 +31,7 @@ export function LandingPage({ onJoinClick }: LandingPageProps) {
 
       <div className="flex flex-col items-center gap-4">
         <Button
-          onClick={onJoinClick}
+          onClick={handleJoinClick}
           className="px-8 py-6 text-lg font-semibold text-white rounded-full hover:opacity-90 transition-opacity"
           style={{ backgroundColor: "#937cdf" }}
         >
