@@ -9,7 +9,7 @@ interface LandingPageProps {
 
 export function LandingPage({ onJoinClick }: LandingPageProps) {
   const handleJoinClick = () => {
-    // Store user interaction for audio playback on meme page
+    // Store user interaction for video audio playback
     localStorage.setItem("monument_user_interacted", "true")
     onJoinClick()
   }

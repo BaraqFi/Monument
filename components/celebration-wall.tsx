@@ -321,7 +321,11 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
       {/* Secret door - fixed position */}
       <div className="fixed bottom-4 right-4 z-10">
         <button
-          onClick={onSecretDoor}
+          onClick={() => {
+            // Store user interaction for video audio playback
+            localStorage.setItem("monument_user_interacted", "true")
+            onSecretDoor()
+          }}
           className="text-2xl hover:scale-110 transition-transform duration-300 animate-pulse"
           title="Secret door"
         >
