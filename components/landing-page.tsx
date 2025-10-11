@@ -25,9 +25,31 @@ export function LandingPage({ onJoinClick }: LandingPageProps) {
       </div>
 
       {/* Title Text */}
-      <h1 className="text-white text-2xl md:text-3xl font-bold mb-12 text-center tracking-wide">
+      <h1 className="text-white text-2xl md:text-3xl font-bold mb-4 text-center tracking-wide">
         FOR MONAD, WITH LOVE.
       </h1>
+
+      {/* Creator Credits */}
+      <div className="flex items-center justify-center gap-3 mb-12">
+        <span className="text-white/40 text-xs">by</span>
+        <a
+          href="https://x.com/BaraqFi"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 text-xs text-white/70 border border-white/20 rounded-md hover:bg-white/5 hover:text-white/90 hover:border-white/30 transition-all"
+        >
+          BaraqFi
+        </a>
+        <span className="text-white/20 text-xs">&</span>
+        <a
+          href="https://x.com/solhitman"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-3 py-1.5 text-xs text-white/70 border border-white/20 rounded-md hover:bg-white/5 hover:text-white/90 hover:border-white/30 transition-all"
+        >
+          solhitman
+        </a>
+      </div>
 
       <div className="flex flex-col items-center gap-4">
         <Button
