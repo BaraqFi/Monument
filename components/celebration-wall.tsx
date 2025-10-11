@@ -30,14 +30,14 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
   const gridRef = useRef<HTMLDivElement>(null)
   
   // Responsive grid configuration
-  const MOBILE_TILES_PER_PAGE = 450 // 30x15 grid for mobile (doubled tiles)
-  const DESKTOP_TILES_PER_PAGE = 1000 // 40x25 grid for desktop (10 pages max)
+  const MOBILE_TILES_PER_PAGE = 400 // 20x20 grid for mobile (square)
+  const DESKTOP_TILES_PER_PAGE = 400 // 25x16 grid for desktop (wide)
   const TILES_PER_PAGE = isMobile ? MOBILE_TILES_PER_PAGE : DESKTOP_TILES_PER_PAGE
   
-  const MOBILE_GRID_COLUMNS = 30
-  const MOBILE_GRID_ROWS = 15
-  const DESKTOP_GRID_COLUMNS = 40
-  const DESKTOP_GRID_ROWS = 25
+  const MOBILE_GRID_COLUMNS = 20
+  const MOBILE_GRID_ROWS = 20
+  const DESKTOP_GRID_COLUMNS = 25
+  const DESKTOP_GRID_ROWS = 16
   
   const GRID_COLUMNS = isMobile ? MOBILE_GRID_COLUMNS : DESKTOP_GRID_COLUMNS
   const GRID_ROWS = isMobile ? MOBILE_GRID_ROWS : DESKTOP_GRID_ROWS
@@ -259,7 +259,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
     const endIndex = startIndex + TILES_PER_PAGE
     const tiles = []
 
-    // Create a 25x25 grid for current page (500 tiles)
+    // Create grid for current page (400 tiles: 25x16 desktop, 20x20 mobile)
     for (let i = 0; i < TILES_PER_PAGE; i++) {
       const globalIndex = startIndex + i
       const participant = participants[globalIndex]
@@ -317,7 +317,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
           width: isMobile ? "95vw" : "85vw", // More space on mobile
           height: "auto",
           maxWidth: isMobile ? "95vw" : "85vw",
-          aspectRatio: isMobile ? "1/1" : "3/2", // Square on mobile, wider on desktop
+          aspectRatio: isMobile ? "1/1" : "25/16", // Square on mobile, wider on desktop
           lineHeight: "0",
           fontSize: "0",
         }}
