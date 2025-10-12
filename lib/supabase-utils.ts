@@ -64,7 +64,6 @@ export async function uploadAvatar(file: File, filename: string): Promise<string
 export function getAvatarUrl(filename: string): string {
   const supabase = createClient()
   const { data } = supabase.storage.from("avatars").getPublicUrl(filename)
-  console.log(`URL for ${filename}:`, data.publicUrl)
 
   return data.publicUrl
 }
