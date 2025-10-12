@@ -1,3 +1,4 @@
+import { convertSegmentPathToStaticExportFilename } from "next/dist/shared/lib/segment-cache/segment-value-encoding"
 import { createClient } from "./supabase/client"
 import type { Participant } from "./types"
 
@@ -49,6 +50,7 @@ export async function uploadAvatar(file: File, filename: string): Promise<string
   const { data, error } = await supabase.storage.from("avatars").upload(filename, file, {
     cacheControl: "3600",
     upsert: false,
+    contentType: "image/png", // Explicitly set content type
   })
 
   if (error) {
@@ -62,6 +64,7 @@ export async function uploadAvatar(file: File, filename: string): Promise<string
 export function getAvatarUrl(filename: string): string {
   const supabase = createClient()
   const { data } = supabase.storage.from("avatars").getPublicUrl(filename)
+  console.log(`URL for ${filename}:`, data.publicUrl)
 
   return data.publicUrl
 }

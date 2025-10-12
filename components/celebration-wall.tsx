@@ -264,7 +264,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
       const globalIndex = startIndex + i
       const participant = participants[globalIndex]
       const isUserTile = participant && userParticipant && participant.id === userParticipant.id
-      const shouldLoadImage = loadedImages.has(globalIndex) || i < 50 // Load first 50 immediately
+      const shouldLoadImage = loadedImages.has(globalIndex) || i < 400 // Load all tiles on current page immediately
 
       tiles.push(
         <div
@@ -294,6 +294,17 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
               height={isMobile ? 60 : 80} // Mobile: 60px, Desktop: 80px
               className="w-full h-full object-cover"
               style={{ display: 'block', margin: 0, padding: 0 }}
+              onError={(e) => {
+                // Fallback for broken images - try adding cache buster
+                const target = e.target as HTMLImageElement
+                const currentSrc = target.src
+                if (!currentSrc.includes('?t=')) {
+                  target.src = `${getAvatarUrl(participant.avatar_filename)}?t=${Date.now()}`
+                } else {
+                  // If cache buster didn't work, show placeholder
+                  target.src = '/placeholder.svg'
+                }
+              }}
             />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-purple-900/30 to-purple-800/30" style={{ margin: 0, padding: 0, display: 'block' }} />
