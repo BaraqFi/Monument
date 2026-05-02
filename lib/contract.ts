@@ -23,7 +23,7 @@ export function getWalletClient() {
 
   return createWalletClient({
     chain: monadTestnet,
-    transport: custom(window.ethereum),
+    transport: custom(window.ethereum as any),
   })
 }
 

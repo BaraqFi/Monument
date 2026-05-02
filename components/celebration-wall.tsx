@@ -294,7 +294,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
               height={isMobile ? 60 : 80} // Mobile: 60px, Desktop: 80px
               className="w-full h-full object-cover"
               style={{ display: 'block', margin: 0, padding: 0 }}
-              onError={(e) => {
+              onError={(e: any) => {
                 // Fallback for broken images - try adding cache buster
                 const target = e.target as HTMLImageElement
                 const currentSrc = target.src
@@ -518,7 +518,7 @@ export function CelebrationWall({ onSecretDoor, onBackFromSecret }: CelebrationW
                     style={{ maxWidth: "100%", maxHeight: "100%" }}
                     unoptimized={true}
                     priority={true}
-                    onError={(e) => {
+                    onError={(e: any) => {
                       // Fallback to Supabase storage if unavatar fails
                       const target = e.target as HTMLImageElement
                       target.src = getAvatarUrl(selectedImage.avatar_filename)
